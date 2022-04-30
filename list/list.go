@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/fatih/color"
 )
@@ -62,6 +63,16 @@ func (l *ListMap) ListSliceAll() []string {
 	return s
 }
 
+func (l *ListMap) ListSliceUndone() []string {
+	var s []string
+	for _, i := range l.m {
+		if !i.done {
+			s = append(s, i.Display())
+		}
+	}
+	return s
+}
+
 func (l *ListMap) Add(v string) {
 	l.AddWithDone(v, false)
 }
@@ -95,6 +106,7 @@ func (l *ListMap) Search(k string) []*ListItem {
 }
 
 func (l *ListMap) Flush() error {
+	syscall.Unlink("./todolist")
 	f, err := os.OpenFile("./todolist", os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
 		return err

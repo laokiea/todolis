@@ -17,9 +17,9 @@ var InitPrompt = color.RedString(" _____         _       _ _     _   \n") + colo
 var (
 	OpList   = fmt.Sprintf("%s   %s", color.New(color.FgGreen).Sprint("List"), "[list all items]")
 	OpAdd    = fmt.Sprintf("%s    %s", color.New(color.FgGreen).Sprint("Add"), "[add an undone item]")
-	OpDelete = fmt.Sprintf("%s   %s", color.New(color.FgGreen).Sprint("Delete"), "[delete a done/undone item]")
+	OpDelete = fmt.Sprintf("%s %s", color.New(color.FgGreen).Sprint("Delete"), "[delete a done/undone item]")
 	OpDone   = fmt.Sprintf("%s   %s", color.New(color.FgGreen).Sprint("Done"), "[marking an item done]")
-	OpSearch = fmt.Sprintf("%s   %s", color.New(color.FgGreen).Sprint("Search"), "[search items by keyword]")
+	OpSearch = fmt.Sprintf("%s %s", color.New(color.FgGreen).Sprint("Search"), "[search items by keyword]")
 )
 
 var (
@@ -103,8 +103,14 @@ func RunRoot(cmd *cobra.Command, args []string) (err error) {
 		SuccessPrompt()
 	case OpDone:
 		position = 3
+		err = DoneOperation()
+		if err != nil {
+			FailedPrompt()
+			return
+		}
 	case OpSearch:
 		position = 4
+		SearchOperation()
 	}
 	return
 }
@@ -162,5 +168,45 @@ func DeleteOperation() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func DoneOperation() error {
+	prompt := promptui.Select{
+		Label: "Select one undone item",
+		Items: list.GlobalLists.ListSliceUndone(),
+	}
+	i, _, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+	if i < 0 {
+		return errors.New("wrong index")
+	}
+	list.GlobalLists.Done(i)
+	err = list.GlobalLists.Flush()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func SearchOperation() error {
+	prompt := promptui.Prompt{
+		Label: "input keyword",
+	}
+	v, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+	var output strings.Builder
+	output.Reset()
+	for _, i := range list.GlobalLists.Search(v) {
+		_, err := output.WriteString(i.Display() + "\n")
+		if err != nil {
+			panic(err)
+		}
+	}
+	fmt.Println(output.String())
 	return nil
 }
