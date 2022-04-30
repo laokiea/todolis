@@ -73,7 +73,7 @@ func PreRunRoot(cmd *cobra.Command, args []string) {
 
 func RunRoot(cmd *cobra.Command, args []string) (err error) {
 	prompt := promptui.Select{
-		Label:     "Select a operation",
+		Label:     "Select an operation",
 		Items:     operations,
 		CursorPos: position,
 	}
