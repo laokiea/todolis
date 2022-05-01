@@ -132,6 +132,7 @@ func (l *ListMap) Search(k string) []*ListItem {
 	return lists
 }
 
+// 把todolist内容写到文件里保存, 看main.go文件
 func (l *ListMap) Flush() error {
 	l.l.RLock()
 	defer l.l.RUnlock()
@@ -155,6 +156,8 @@ func (l *ListMap) Flush() error {
 	return nil
 }
 
+// 这个是在程序开始执行前
+// 把文件中保存的list加载进内存中,看root.go文件(80-PreRunRoot方法)
 func (l *ListMap) Load() error {
 	f, err := os.OpenFile(TodolistFile, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {

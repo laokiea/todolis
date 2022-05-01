@@ -53,6 +53,7 @@ func Execute() error {
 	return err
 }
 
+// 这里先初始化
 func NewCommand() *cobra.Command {
 	o.Do(func() {
 		DefaultCommand = &cobra.Command{
@@ -75,6 +76,8 @@ func DefaultCmd() *cobra.Command {
 	}
 }
 
+// 这是在正式执行命令前做的事情
+// 这里输出了一些格式化内容
 func PreRunRoot(cmd *cobra.Command, args []string) {
 	if !initPromptDisplay {
 		fmt.Println(InitPrompt)
@@ -86,6 +89,7 @@ func PreRunRoot(cmd *cobra.Command, args []string) {
 	}
 }
 
+// 执行的命令
 func RunRoot(cmd *cobra.Command, args []string) (err error) {
 	template := promptui.SelectTemplates{
 		Label:    "{{ . |  green}}",
@@ -96,6 +100,7 @@ func RunRoot(cmd *cobra.Command, args []string) (err error) {
 --------- Description ----------
 {{ .Desc }}`,
 	}
+	// 输出所有的菜单
 	prompt := promptui.Select{
 		Label:     "Select an operation",
 		Items:     ops,
@@ -107,6 +112,7 @@ func RunRoot(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 	op := ops[i].Desc
+	// 判断选择的菜单是什么来执行对应的操作
 	switch op {
 	case OpList:
 		position = 0
@@ -185,12 +191,14 @@ func NoMatchPrompt() {
 func ListOperation() {
 	var output strings.Builder
 	output.Reset()
+	// 查询目前所有的todo项
 	for _, i := range list.GlobalLists.List() {
 		_, err := output.WriteString(i.Display() + "\n")
 		if err != nil {
 			panic(err)
 		}
 	}
+	//输出
 	fmt.Println(output.String())
 }
 
@@ -202,6 +210,7 @@ func AddOperation() error {
 	if err != nil {
 		return err
 	}
+	// 添加一项
 	list.GlobalLists.Add(v)
 	if err != nil {
 		return err
@@ -210,6 +219,8 @@ func AddOperation() error {
 }
 
 func DeleteOperation() error {
+	// 先查询出所有的item
+	// 然后执行删除
 	prompt := promptui.Select{
 		Label: "Select one item",
 		Items: list.GlobalLists.ListSliceAll(),
@@ -229,6 +240,8 @@ func DeleteOperation() error {
 }
 
 func DoneOperation() error {
+	// 先查询出所有的未完成的item
+	// 然后执行标记已完成
 	items := list.GlobalLists.ListSliceUndone()
 	if len(items) == 0 {
 		return ErrNoMatchItems
@@ -255,12 +268,14 @@ func SearchOperation() error {
 	prompt := promptui.Prompt{
 		Label: "input keyword",
 	}
+	// 读取用户输入的关键字
 	v, err := prompt.Run()
 	if err != nil {
 		return err
 	}
 	var output strings.Builder
 	output.Reset()
+	// 这里去list中根据关键字匹配
 	items := list.GlobalLists.Search(v)
 	if len(items) == 0 {
 		return ErrNoMatchItems
@@ -271,6 +286,7 @@ func SearchOperation() error {
 			panic(err)
 		}
 	}
+	// 将结果输出
 	fmt.Println(output.String())
 	return nil
 }
