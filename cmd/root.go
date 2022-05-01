@@ -70,7 +70,7 @@ func NewCommand() *cobra.Command {
 func DefaultCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:    "default",
-		Short:  "Select a operation",
+		Short:  "Select an operation",
 		RunE:   RunRoot,
 		PreRun: PreRunRoot,
 	}
