@@ -6,7 +6,9 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -27,11 +29,14 @@ type ListMap struct {
 	len     int
 	p       *regexp.Regexp
 	lastKey string
+	l       sync.RWMutex
 }
 
 type ListItem struct {
-	v    string
-	done bool
+	v        string
+	done     bool
+	addDate  string
+	doneDate string
 }
 
 func (i ListItem) String() string {
@@ -46,7 +51,7 @@ func (i ListItem) Status() string {
 }
 
 func (i ListItem) Display() string {
-	return fmt.Sprintf("%s %s", i.Status(), color.New(color.FgHiBlack).Add(color.Bold).Add(color.BgWhite).Sprint(i.String()))
+	return fmt.Sprintf("%s %s %s", i.Status(), color.New(color.FgHiBlack).Add(color.Bold).Add(color.BgWhite).Sprint(i.String()), i.addDate)
 }
 
 func (l *ListMap) Len() int {
@@ -54,11 +59,15 @@ func (l *ListMap) Len() int {
 }
 
 func (l *ListMap) List() []*ListItem {
+	l.l.RLock()
+	defer l.l.RUnlock()
 	return l.m
 }
 
 func (l *ListMap) ListSliceAll() []string {
 	var s []string
+	l.l.RLock()
+	defer l.l.RUnlock()
 	for _, i := range l.m {
 		s = append(s, i.Display())
 	}
@@ -67,6 +76,8 @@ func (l *ListMap) ListSliceAll() []string {
 
 func (l *ListMap) ListSliceUndone() []string {
 	var s []string
+	l.l.RLock()
+	defer l.l.RUnlock()
 	for _, i := range l.m {
 		if !i.done {
 			s = append(s, i.Display())
@@ -76,19 +87,27 @@ func (l *ListMap) ListSliceUndone() []string {
 }
 
 func (l *ListMap) Add(v string) {
-	l.AddWithDone(v, false)
+	l.AddWith(v, false, time.Now().Format("2006/01/02"))
 }
 
-func (l *ListMap) AddWithDone(v string, done bool) {
+func (l *ListMap) AddWith(v string, done bool, date string) int {
+	l.l.Lock()
+	defer l.l.Unlock()
 	l.len++
-	l.m = append(l.m, &ListItem{v: v, done: done})
+	l.m = append(l.m, &ListItem{v: v, done: done, addDate: date})
+	return l.len - 1
 }
 
 func (l *ListMap) Done(i int) {
+	l.l.Lock()
+	defer l.l.Unlock()
 	l.m[i].done = true
+	l.m[i].doneDate = time.Now().Format("2006/01/02")
 }
 
 func (l *ListMap) Del(i int) {
+	l.l.Lock()
+	defer l.l.Unlock()
 	l.len--
 	l.m = append(l.m[:i], l.m[i+1:]...)
 }
@@ -99,6 +118,8 @@ func (l *ListMap) Search(k string) []*ListItem {
 		l.lastKey = k
 		l.p = regexp.MustCompile(`^.*` + k + `.*$`)
 	}
+	l.l.RLock()
+	defer l.l.RUnlock()
 	for _, i := range l.m {
 		if l.p.MatchString(i.v) {
 			lists = append(lists, i)
@@ -108,6 +129,8 @@ func (l *ListMap) Search(k string) []*ListItem {
 }
 
 func (l *ListMap) Flush() error {
+	l.l.RLock()
+	defer l.l.RUnlock()
 	syscall.Unlink(TodolistFile)
 	f, err := os.OpenFile(TodolistFile, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
@@ -120,7 +143,7 @@ func (l *ListMap) Flush() error {
 		} else {
 			done = "0"
 		}
-		_, err = f.Write([]byte(fmt.Sprintf("%s|%s\n", i.v, done)))
+		_, err = f.Write([]byte(fmt.Sprintf("%s|%s|%s\n", i.v, done, i.addDate)))
 		if err != nil {
 			return err
 		}
@@ -129,6 +152,8 @@ func (l *ListMap) Flush() error {
 }
 
 func (l *ListMap) Load() error {
+	l.l.Lock()
+	defer l.l.Unlock()
 	f, err := os.OpenFile(TodolistFile, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
 		return err
@@ -137,12 +162,12 @@ func (l *ListMap) Load() error {
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		line := scanner.Text()
-		pos := strings.LastIndex(line, "|")
+		item := strings.Split(line, "|")
 		done := false
-		if line[pos+1:] == "1" {
+		if item[1] == "1" {
 			done = true
 		}
-		l.AddWithDone(line[:pos], done)
+		l.AddWith(item[0], done, item[2])
 	}
 	return nil
 }
