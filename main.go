@@ -6,12 +6,16 @@ import (
 	"github.com/laokiea/todolist/cmd"
 )
 
+type pepper struct {
+	Name     string
+	HeatUnit int
+	Peppers  int
+}
+
 func main() {
 	//quit := make(chan<- os.Signal, 1)
 	//signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	cmd.NewCommand()
-	err := cmd.Execute()
-	if err != nil {
+	if err := cmd.NewCommand().Execute(); err != nil {
 		log.Fatal(err)
 	}
 }

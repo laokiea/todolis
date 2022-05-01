@@ -12,6 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type Op struct {
+	Name string
+	Desc string
+}
+
 var InitPrompt = color.RedString(" _____         _       _ _     _   \n") + color.GreenString("|_   _|__   __| | ___ | (_)___| |_ \n") + color.YellowString("  | |/ _ \\ / _` |/ _ \\| | / __| __|\n") + color.BlueString("  | | (_) | (_| | (_) | | \\__ \\ |_ \n") + color.MagentaString("  |_|\\___/ \\__,_|\\___/|_|_|___/\\__|\n                                   \n")
 
 var (
@@ -21,6 +26,14 @@ var (
 	OpDone   = fmt.Sprintf("%s   %s", color.New(color.FgGreen).Sprint("Done"), "[marking an item done]")
 	OpSearch = fmt.Sprintf("%s %s", color.New(color.FgGreen).Sprint("Search"), "[search items by keyword]")
 )
+
+var ops = []Op{
+	{"List", OpList},
+	{"Add", OpAdd},
+	{"Delete", OpDelete},
+	{"Done", OpDone},
+	{"Search", OpSearch},
+}
 
 var (
 	position   int
@@ -72,15 +85,26 @@ func PreRunRoot(cmd *cobra.Command, args []string) {
 }
 
 func RunRoot(cmd *cobra.Command, args []string) (err error) {
+	template := promptui.SelectTemplates{
+		Label:    "{{ . |  green}}",
+		Active:   "\U00012726 {{ .Name | green }}",
+		Inactive: "  {{ .Name | white }}",
+		Selected: "\U00012726 {{ .Name | green }}",
+		Details: `
+--------- Description ----------
+{{ .Desc }}`,
+	}
 	prompt := promptui.Select{
 		Label:     "Select an operation",
-		Items:     operations,
+		Items:     ops,
 		CursorPos: position,
+		Templates: &template,
 	}
-	_, op, err := prompt.Run()
+	i, _, err := prompt.Run()
 	if err != nil {
 		return err
 	}
+	op := ops[i].Desc
 	switch op {
 	case OpList:
 		position = 0
