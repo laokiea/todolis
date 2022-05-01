@@ -11,6 +11,8 @@ import (
 	"github.com/fatih/color"
 )
 
+const TodolistFile = "todo"
+
 type List interface {
 	List() []*ListItem
 	Add(string)
@@ -106,8 +108,8 @@ func (l *ListMap) Search(k string) []*ListItem {
 }
 
 func (l *ListMap) Flush() error {
-	syscall.Unlink("./todolist")
-	f, err := os.OpenFile("./todolist", os.O_CREATE|os.O_RDWR, 0777)
+	syscall.Unlink(TodolistFile)
+	f, err := os.OpenFile(TodolistFile, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
 		return err
 	}
@@ -127,7 +129,7 @@ func (l *ListMap) Flush() error {
 }
 
 func (l *ListMap) Load() error {
-	f, err := os.OpenFile("./todolist", os.O_CREATE|os.O_RDWR, 0777)
+	f, err := os.OpenFile(TodolistFile, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
 		return err
 	}

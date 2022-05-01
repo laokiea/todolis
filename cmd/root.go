@@ -168,7 +168,6 @@ func AddOperation() error {
 		return err
 	}
 	list.GlobalLists.Add(v)
-	err = list.GlobalLists.Flush()
 	if err != nil {
 		return err
 	}
@@ -188,7 +187,6 @@ func DeleteOperation() error {
 		return errors.New("wrong index")
 	}
 	list.GlobalLists.Del(i)
-	err = list.GlobalLists.Flush()
 	if err != nil {
 		return err
 	}
@@ -208,7 +206,6 @@ func DoneOperation() error {
 		return errors.New("wrong index")
 	}
 	list.GlobalLists.Done(i)
-	err = list.GlobalLists.Flush()
 	if err != nil {
 		return err
 	}

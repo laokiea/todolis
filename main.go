@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/laokiea/todolist/cmd"
+	"github.com/laokiea/todolist/list"
 )
 
 type pepper struct {
@@ -18,4 +19,5 @@ func main() {
 	if err := cmd.NewCommand().Execute(); err != nil {
 		log.Fatal(err)
 	}
+	list.GlobalLists.Flush()
 }
