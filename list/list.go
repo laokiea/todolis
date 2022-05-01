@@ -45,17 +45,21 @@ func (i ListItem) String() string {
 
 func (i ListItem) Status() string {
 	if i.done {
-		return fmt.Sprintf("[%s]", color.GreenString("done"))
+		return color.GreenString("done")
 	}
-	return fmt.Sprintf("[%s]", color.RedString("undone"))
+	return color.RedString("undone")
 }
 
 func (i ListItem) Display() string {
-	return fmt.Sprintf("%s %s %s", i.Status(), color.New(color.FgHiBlack).Add(color.Bold).Add(color.BgWhite).Sprint(i.String()), i.addDate)
+	return fmt.Sprintf("[%s][%s] %s", i.Status(), color.BlueString(i.addDate), color.New(color.FgHiBlack).Add(color.Bold).Add(color.BgWhite).Sprint(i.String()))
 }
 
 func (l *ListMap) Len() int {
 	return len(l.m)
+}
+
+func (l *ListMap) IsEmpty() bool {
+	return l.len == 0
 }
 
 func (l *ListMap) List() []*ListItem {
@@ -152,8 +156,6 @@ func (l *ListMap) Flush() error {
 }
 
 func (l *ListMap) Load() error {
-	l.l.Lock()
-	defer l.l.Unlock()
 	f, err := os.OpenFile(TodolistFile, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
 		return err

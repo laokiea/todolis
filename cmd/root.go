@@ -27,6 +27,8 @@ var (
 	OpSearch = fmt.Sprintf("%s %s", color.New(color.FgGreen).Sprint("Search"), "[search items by keyword]")
 )
 
+var ErrNoMatchItems = errors.New("no macth items")
+
 var ops = []Op{
 	{"List", OpList},
 	{"Add", OpAdd},
@@ -36,8 +38,8 @@ var ops = []Op{
 }
 
 var (
-	position   int
-	operations = []string{OpList, OpAdd, OpDelete, OpDone, OpSearch}
+	position int
+	//operations = []string{OpList, OpAdd, OpDelete, OpDone, OpSearch}
 )
 
 var (
@@ -108,6 +110,10 @@ func RunRoot(cmd *cobra.Command, args []string) (err error) {
 	switch op {
 	case OpList:
 		position = 0
+		if list.GlobalLists.IsEmpty() {
+			fmt.Println(color.RedString("No items"))
+			return
+		}
 		ListOperation()
 	case OpAdd:
 		position = 1
@@ -119,6 +125,10 @@ func RunRoot(cmd *cobra.Command, args []string) (err error) {
 		SuccessPrompt()
 	case OpDelete:
 		position = 2
+		if list.GlobalLists.IsEmpty() {
+			EmptyPrompt()
+			return
+		}
 		err = DeleteOperation()
 		if err != nil {
 			FailedPrompt()
@@ -127,14 +137,31 @@ func RunRoot(cmd *cobra.Command, args []string) (err error) {
 		SuccessPrompt()
 	case OpDone:
 		position = 3
+		if list.GlobalLists.IsEmpty() {
+			EmptyPrompt()
+			return
+		}
 		err = DoneOperation()
 		if err != nil {
+			if err == ErrNoMatchItems {
+				NoMatchPrompt()
+				return nil
+			}
 			FailedPrompt()
 			return
 		}
+		SuccessPrompt()
 	case OpSearch:
 		position = 4
-		SearchOperation()
+		err = SearchOperation()
+		if err != nil {
+			if err == ErrNoMatchItems {
+				NoMatchPrompt()
+				return nil
+			}
+			FailedPrompt()
+		}
+		return
 	}
 	return
 }
@@ -145,6 +172,14 @@ func FailedPrompt() {
 
 func SuccessPrompt() {
 	color.New(color.FgGreen).Add(color.Bold).Println("success")
+}
+
+func EmptyPrompt() {
+	fmt.Println(color.RedString("No items"))
+}
+
+func NoMatchPrompt() {
+	fmt.Println(color.RedString("No match items"))
 }
 
 func ListOperation() {
@@ -194,9 +229,13 @@ func DeleteOperation() error {
 }
 
 func DoneOperation() error {
+	items := list.GlobalLists.ListSliceUndone()
+	if len(items) == 0 {
+		return ErrNoMatchItems
+	}
 	prompt := promptui.Select{
 		Label: "Select one undone item",
-		Items: list.GlobalLists.ListSliceUndone(),
+		Items: items,
 	}
 	i, _, err := prompt.Run()
 	if err != nil {
@@ -222,7 +261,11 @@ func SearchOperation() error {
 	}
 	var output strings.Builder
 	output.Reset()
-	for _, i := range list.GlobalLists.Search(v) {
+	items := list.GlobalLists.Search(v)
+	if len(items) == 0 {
+		return ErrNoMatchItems
+	}
+	for _, i := range items {
 		_, err := output.WriteString(i.Display() + "\n")
 		if err != nil {
 			panic(err)
