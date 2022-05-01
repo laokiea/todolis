@@ -87,9 +87,9 @@ func PreRunRoot(cmd *cobra.Command, args []string) {
 func RunRoot(cmd *cobra.Command, args []string) (err error) {
 	template := promptui.SelectTemplates{
 		Label:    "{{ . |  green}}",
-		Active:   "\U00012726 {{ .Name | green }}",
+		Active:   "\U0001F31F {{ .Name | green }}",
 		Inactive: "  {{ .Name | white }}",
-		Selected: "\U00012726 {{ .Name | green }}",
+		Selected: "\U0001F31F {{ .Name | green }}",
 		Details: `
 --------- Description ----------
 {{ .Desc }}`,
